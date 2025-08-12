@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import asyncio
 from database import init_db
 from models import User, UserCreate
 from pydantic import ValidationError
 
 app = Flask(__name__)
+CORS(app)
 
-# Создаём собственный event loop
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 loop.run_until_complete(init_db())
@@ -14,9 +15,7 @@ loop.run_until_complete(init_db())
 @app.route("/users", methods=["GET"])
 def get_users():
     users = loop.run_until_complete(User.find_all().to_list())
-    return jsonify([
-        {**user.model_dump(), "id": str(user.id)} for user in users
-    ])
+    return jsonify([{**user.model_dump(), "id": str(user.id)} for user in users])
 
 @app.route("/users", methods=["POST"])
 def create_user():
@@ -32,8 +31,6 @@ def create_user():
     response["id"] = str(user.id)
     return jsonify(response), 201
 
-
-# DELETE /users/<id>
 @app.route("/users/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
     user = loop.run_until_complete(User.get(user_id))
